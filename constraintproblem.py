@@ -1,18 +1,16 @@
 #!/usr/bin/env python
 # CSP-problem class by Ilse van der Linden & Sander van Dorsten
 
-""" Module that 
-
-TODO 
-
+""" Module that is able to solve CSPs. The problems are modelled as a constraints, which this module tries to satisfy. The solver implemented uses a recursive backtracker to search the searchspace (depth-first search) and returns a single solution found.
 
 """
-from pprint import pprint
+
 import time
 from collections import namedtuple
 from copy import deepcopy
+from pprint import pprint
 
-# namedtuple for statistics. Faster than an object, but has a lot of accessibility options. easily configurable if you want to return more sorts of statistics
+# namedtuple for statistics. lighter datastructure than an class, but has a lot of accessibility options. easily configurable if you want to return more sorts of statistics.
 Statistics = namedtuple("Statistics", "runtime, splits")
 
 class Problem(object):
@@ -20,14 +18,14 @@ class Problem(object):
 
     """
     def __init__(self, minimal_remaining_values = False, forward_checking = False ):
+        """ set some init values for the instantiated CSP.
         """
-        @param solver: Problem solver used to find solutions
-                       (default is BacktrackingSolver)
-        @type solver:  instance of a Solver subclass
-        """
+
+        # heuristics
         self.fc = forward_checking
         self.mrv = minimal_remaining_values
 
+        # init assignments
         self.solver = BacktrackingSolver(forward_checking=self.fc, minimal_remaining_values=self.mrv)
         self.constraints = []
         self.variables = {}
@@ -40,12 +38,8 @@ class Problem(object):
     def addConstraint(self, constrained_variables=None):
         """ Add a constraint over the variables to the problem
 
-        @param constraint: an instance of one of the constraint classes,
-                           defines a constraint over the variables given
-        @type  constraint: an instance of one of the constrain classes
-        @param  variables: a list of variables over which the constraint
-                           works. Default is all variables.
-        @type   variables: a list
+        @param  constrained_variables: a list of variables over which the constraint works. Default is all variables.
+        @type   constrained_variables: a list
         """
         if constrained_variables == None:
             constrained_variables = self.variables
@@ -57,10 +51,8 @@ class Problem(object):
 
         @param variable: variable that we add to our problem variables
         @type variable:  some single value, for example a string, an int. In the sudoku case, it's a tuple.
-        @param domain: Domain of the added variable
-        @type domain:  instance of Domain, a list
-
-        TODO: add exception and error handling.
+        @param domain:   Domain of the added variable
+        @type domain:    instance of Domain, a list
         """
         self.variables[variable] = domain
 
@@ -76,8 +68,8 @@ class Problem(object):
             self.addVariable(variable, domain)
 
     def mapVarToConstraints(self):
-        """ Based on variables and constraint list make dictionary that
-        maps variables to their constraints
+        """ Based on variables and constraint list, make dictionary that
+        maps variables to their constraints.
         """
 
         for variable in self.variables:
@@ -91,61 +83,28 @@ class Problem(object):
 
     def getSolution(self):
         """
-        Returns a solution for the CSP-problem
+        Returns a solution for the CSP-problem. The type of solver is specified in the __init__, as are the heuristics for the solver.
 
-        @rtype: ?
+        @rtype: a dictionary with an assignment of variables.
 
         """
-        """ HEURISTIEK OPTIES
-        1. most constrained variable
-        2. smallest domain variable
-        3. mix of 1 and 2
-        MORE IDEAS? 
-
-        deze implementeren we later in een andere solver die we SuperSolver() of iets dergelijks noemen. BacktrackingSolver() is een naive implementatie.
-        """
-        start = time.time()
         self.var_constr_dict = self.mapVarToConstraints()
 
+        start = time.time()
         solution = self.solver.getSolution(self)
         self.runtime = time.time() - start
-        # solution is a instance of problem, where variables is all done!
+        # solution is an assignment of problem, where the assignments for all variables are filled in. 
         return solution, self.getStatistics()
 
     def getStatistics(self):
+        """ gets the statistics for this problem, for analysis.
+        """
         stats = Statistics(runtime = self.runtime, splits = self.splits)
         return stats
 
 
-class Solver(object):
-    """ if we would have multiple ways of solving, lets say: backtracking, iterative, this would be very useful.
-
-    """
-    pass
-
-
-class BacktrackingSolver(Solver):
-    """ simple solver that uses backtracking.
-
-    example
-
-     _ 9 4 _ _ _ 1 3 _ 
-     _ _ _ _ _ _ _ _ _ 
-     _ _ _ _ 7 6 _ _ 2
-     _ 8 _ _ 1 _ _ _ _ 
-     _ 3 2 _ _ _ _ _ _ 
-     _ _ _ 2 _ _ _ 6 _ 
-     _ _ _ _ 5 _ 4 _ _ 
-     _ _ _ _ _ 8 _ _ 7
-     _ _ 6 3 _ 4 _ _ 8
-
-    Steps:
-    1. kies volgens een heuristiek een leeg vakje (bijvoorbeeld (1, 1))
-        2. kies volgens een heuristiek een assignment (bijvoorbeeld '1')
-        check de constraints waar de variabele in voorkomt. True? --> ga naar 1, False? --> verwijder de assignment (in het voorbeeld '1') uit het mogelijke domein en ga naar 2.
-        Als het domein leeg is, ga terug naar het voorgaande leeg vakje en ga naar stap 2.
-
-    Volgens mij is dit een OK naive implementatie?
+class BacktrackingSolver(object):
+    """ simple solver object that uses backtracking.
 
     """
 
@@ -153,19 +112,11 @@ class BacktrackingSolver(Solver):
         self.forward_checking = forward_checking
         self.mrv = minimal_remaining_values
 
-
     def getSolution(self, problem):
-        """ we updaten eerst alle domains
-            daarna gaan we stapje voor stapje unassigned variables assignen. als dit fout gaat, kiezen we een andere variable.
+        """ Gets a solution for the given problem. 
 
-            maak een snapshot van het probleem
-            voor variabelen in het snapshot:
-                als variabele unassigned is:
-                    kies een assignment uit het domein
-                        check alle3 de constraints of ze voldoen.
-                        True --> volgende variabele
-                        False --> kies een andere assignment
-                    Geen assignments meer over? ga terug naar het vorige keuzemoment (snapshot)
+            @rtype: a dictionary with an assignment of variables, or False if no consistent assignment is found.
+
         """
         if self.forward_checking:
             problem, assigned = self.update_domains(problem,[])
@@ -173,6 +124,9 @@ class BacktrackingSolver(Solver):
         return self.backtrack(problem)
 
     def backtrack(self, problem):
+        """ The backtracking part of the solver. backtracks depth-first through the searchspace to find a solution.
+
+        """
 
         # find unassigned variables
         u = (v for v in problem.variables if len(problem.variables[v]) > 1 )
@@ -186,8 +140,9 @@ class BacktrackingSolver(Solver):
             unassigned_vars.sort()
         unassigned = unassigned_vars[0][1]
 
+        # make a copy of current state for backtracking
         copy_variables = deepcopy(problem.variables)      
-        
+
         # Get domain of unassigned variable
         domain = problem.variables[unassigned]
         for value in domain:
@@ -205,42 +160,18 @@ class BacktrackingSolver(Solver):
         problem.variables = deepcopy(copy_variables)
         return False
 
-    def check_assignment(self, problem, assigned):
-        flag = True
-        for variable in assigned:
-            myconstraints = problem.var_constr_dict[variable]
-            for constraint_obj in myconstraints:
-                flag = constraint_obj.check(problem, variable)
-                if flag == False:
-                    return flag
-        return flag 
- 
     def update_domains(self, problem, assigned):
-        """ we krijgen hier een probleem, waar variabelen al een assignment kunnen hebben. voor bovenstaande voorbeeldsudoku zou het volgende dus gelden:
-        problem.variables = {
-                                (1,1) : [3]
-                                (1,2) : [9]
-                                (1,3) : [1,2,3,4,5,6,7,8,9]
-                                  .
-                                  .
-                                  .
-                                (9,9) : [1,2,3,4,5,6,7,8,9]
-                            }
-        Voordat we ook maar iets gaan invullen (dus bvb (1,3) --> '2'), gaan we domain reduction doen. we willen dat bij (1,3) het domein niet [1:9] wordt, maar [2,5]. dit komt omdat, volgens alle constraints (Row, Column, en Box) dit de enige waarde zijn die dit hokje nog kan aannemen.
+        """ updates the domains for a problem, after assigning values.
+            this reduces the domains, if forward_checking is enabled.
 
-        HOE DOEN WE DIT?
-        REPEAT UNTIL NO UPDATES ANY MORE
-        voor elke var (x,y):
-            voor elke constraint, horende bij (x,y) (bvb (1,3):
-                voor elke var in dit constraint horende bij (x,y):
-                    als const_vars[(a,b)] heeft lengte 1 (is dus assigned):
-                        verwijder deze mogelijkheid voor (x,y) uit zijn domein.
+            we only update the domains locally, and do this only once.
 
         """
 
         # For first update round: find all assigned values
         if len(assigned) == 0:
             assigned = [ v for v in problem.variables if len(problem.variables[v]) == 1 ]
+
         # Loop over assigned variables    
         for var1 in assigned:
             # Find constraints for assigned var
@@ -260,6 +191,20 @@ class BacktrackingSolver(Solver):
         return problem, assigned
 
 
+    def check_assignment(self, problem, assigned):
+        """ after updating a domain, check if the assignment of a variable causes a clash with the rest of the solution.
+
+        """
+        flag = True
+        for variable in assigned:
+            myconstraints = problem.var_constr_dict[variable]
+            for constraint_obj in myconstraints:
+                flag = constraint_obj.check(problem, variable)
+                if flag == False:
+                    return flag
+        return flag 
+
+ 
 class AllDifferentConstraint(object):
     """ init a constraint over variables. If these variables are not given, the constraint will be over all variables.
     """
@@ -268,24 +213,19 @@ class AllDifferentConstraint(object):
         """ init a constraint. 
             
             @param constrained_variables: variables over which the constraint is. the default is all variables
-            @type constrained_variables: a list. for example [11,12,13]
+            @type constrained_variables: a list.
         """
         self.const_vars = []
         for var in constrained_variables:
             self.const_vars.append(var)
 
     def getOthers(self, variable):
-        """ returns a list of all the constraint variables, except the argument variable."""
+        """ returns a list of all the constraint variables, except the argument variable.
+        """
         return [item for item in self.const_vars if item != variable]
 
     def check(self, problem, updated_var):
         """ check if constraint is still satisfied, after an update. 
-            TODO: this is going to be something like: given a snapshot! not yet implemnted though.
-
-            stel je assigned: (1,2) --> '1'. dan moet je alle constraints die iets zeggen over (1,2) checken, of de waarde 1 daar wel kan. (1,3) mag dus niet al '1' zijn.
-
-            voor alle andere variabelen die worden ge-effect door het constraint:
-                    als deze variabelen assigned zijn, en hetzelfde zijn als de updated_var, kan de updated_var niet die waarde krijgen. 
         """
         for var in self.getOthers(updated_var):
             if len(problem.variables[var]) == 1:

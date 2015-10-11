@@ -3,6 +3,12 @@
 # for a full implementation of a python constraint solver, see https://pypi.python.org/pypi/python-constraint.
 # for a crashcourse on creating a CSP-solver in a weekend, see http://www.cs.northwestern.edu/~ian/GDCConstraintsHowTo.pdf
 
+"""
+    main file for this assignment. This is where we do all the meta CSP stuff, create the CSP's and do some statistics, printing
+
+"""
+
+
 from constraintproblem import *
 import sys
 from pprint import pprint
@@ -14,7 +20,6 @@ from collections import OrderedDict
 
 CHECK_X_SUDOKUS = 0
 SUDOKUS = []
-SUDOKU_SIZE = (9, 9)
 N_SUDOKUS = 0
 
 class Sudoku(object):
@@ -85,7 +90,7 @@ def read_sudokus(filename):
                     if character.isdigit():
                         row.append(int(character))
                     # Go to next row when all columns are read    
-                    if (len(row) == SUDOKU_SIZE[1]):
+                    if (len(row) == 9):
                         sudoku.append(row)
                         row = []
                 sud = Sudoku(sudoku)
@@ -98,8 +103,8 @@ def variable_domains(problem,sudoku):
     """ Add variables with domain 1-9 for each variable
     we also have to somehow translate all the sudokuchars to constraints. i.e. if (1,1) = 1 at init, there needs to be a constraint over variable (1,1) so that its domain is only [1]. 
     """
-    for row in range(SUDOKU_SIZE[0]):
-        for col in range(SUDOKU_SIZE[1]):
+    for row in range(9):
+        for col in range(9):
             if sudoku[row][col] == 0:
                 problem.addVariable((row + 1, col + 1), range(1,10))
             else:
@@ -109,13 +114,14 @@ def variable_domains(problem,sudoku):
 def sudoku_constraints(problem):
     """ Add constraints standard for all sudokus """
 
-    # Add constraints
-    # constraint id: 1 = AllDifferentConstraint()
-    for i in range(1,SUDOKU_SIZE[0]):        
+    # Add row constraints
+    for i in range(1,10):        
         problem.addConstraint([(i,1), (i,2), (i,3), (i,4), (i,5), (i,6), (i,7), (i,8), (i,9)])
-    for j in range(1,SUDOKU_SIZE[1]):
+    # Add column constraints   
+    for j in range(1,10):
         problem.addConstraint([(1,j), (2,j), (3,j), (4,j), (5,j), (6,j), (7,j), (8,j), (9,j)])
 
+    # Add box constraints 
     problem.addConstraint([(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)])
     problem.addConstraint([(1,4),(1,5),(1,6),(2,4),(2,5),(2,6),(3,4),(3,5),(3,6)])
     problem.addConstraint([(1,7),(1,8),(1,9),(2,7),(2,8),(2,9),(3,7),(3,8),(3,9)])
@@ -135,9 +141,9 @@ def solution2array(solution):
         this is also used as intermediate step for rewriting the sudoku back to the original format.
     """
     sudoku_array = []
-    for i in range(SUDOKU_SIZE[0]):
+    for i in range(9):
         sudoku_array.append([])
-        for j in range(SUDOKU_SIZE[1]):
+        for j in range(9):
             sudoku_array[i].append(0)
     for variable, assignment in solution.iteritems():
         if len(assignment) == 1:
@@ -149,8 +155,8 @@ def array2output(solution_array):
 
     """
     outputstring = ""
-    for i in range(SUDOKU_SIZE[0]):
-        for j in range(SUDOKU_SIZE[1]):
+    for i in range(9):
+        for j in range(9):
             outputstring += str(solution_array[i][j])
     return outputstring
 
@@ -264,8 +270,8 @@ def print_statistics(forward_checking = False, minimal_remaining_values = False)
 def main(arg, forward_checking = False, minimal_remaining_values=False):
     """ main function of our CSP sudoku solver. reads in an inputfile with sudokus and outputs the result to a .txt file specified, or to the command line if the outputfile is not specified explicitly as an argument.
 
-        @param forward_checking: optional heuristic, default is False.
-        @param minimal_remaining_values: optional heuristic
+        @param forward_checking: search heuristic, default is False
+        @param minimal_remaining_values: search heuristic, default is False
 
 
     A good thing to notice is that we can call this function multiple times (for example if you want to execute multiple heuristic settings). It has some overhead, but it works perfectly. A seperate statistics-file is generated for every run, so you can track the performance when tweaking values.
@@ -282,10 +288,6 @@ def main(arg, forward_checking = False, minimal_remaining_values=False):
     outputfile = ""
 
     # User input size sudoku
-    if len(arg) > 3:
-        size = arg[3].split('x')
-        SUDOKU_SIZE = (int(size[0]), int(size[1]))
-
     if len(arg) > 2 and arg[2][-4:] == ".txt":
         print_to_file = True
         outputfile = arg[2]
@@ -314,6 +316,7 @@ def main(arg, forward_checking = False, minimal_remaining_values=False):
         # Get solution (this is of the form {(1,1): [4], (1,2): [5] , .... (9,9) : [1]})
         solution, statistics = problem.getSolution()
         sudoku_obj.solved = True
+
         # get live feedback on runtimes.
         print statistics
         sudoku_obj.runtime = getattr(statistics, 'runtime')
@@ -327,6 +330,7 @@ def main(arg, forward_checking = False, minimal_remaining_values=False):
         else:
             #... or to a file.
             output.append(array2output(solution_array))
+
     #if an outputfile is specified
     if outputfile:
         # log all the sudokus to a txt-file
@@ -339,9 +343,8 @@ if __name__ == '__main__':
     # default = 0, then we check all.
     CHECK_X_SUDOKUS = 0
     if len(sys.argv) == 1:
-        print "Please give a input filename, output filename and the size of the sudokus"
+        print "Please give a input filename, output filename"
         print "if no outputfile is given, the solutions will be outputted on the screen"
-        print "If no size given, than default sudoku size is 9x9"
         print "Example: python sudoku.py \"input.txt\" \"output.txt\" "
     else:
         main(sys.argv,forward_checking=True, minimal_remaining_values=False)
