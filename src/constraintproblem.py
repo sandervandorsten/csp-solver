@@ -244,9 +244,9 @@ class BacktrackingSolver(object):
         mrv = []
         domain_size = 2
         while len(mrv) == 0:
-            d = (v for v in unassigned if len(variables[v]) == domain_size)
-            mrv = [(len(variables[v]), v) for v in d]
-        return self.sort_dh(unassigned, var_constr_dict) 
+            mrv = [v for v in unassigned if len(variables[v]) == domain_size]
+            domain_size += 1
+        return self.sort_dh(mrv, var_constr_dict)
 
  
 class AllDifferentConstraint(object):
