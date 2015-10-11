@@ -349,4 +349,4 @@ if __name__ == '__main__':
         print "if no outputfile is given, the solutions will be outputted on the screen"
         print "Example: python sudoku.py \"input.txt\" \"output.txt\" "
     else:
-        main(sys.argv,forward_checking=True, minimal_remaining_values=False, degree_heuristic = False)
+        main(sys.argv,forward_checking=True, minimal_remaining_values=True, degree_heuristic = True)
