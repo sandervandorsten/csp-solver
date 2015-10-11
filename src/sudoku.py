@@ -168,7 +168,7 @@ def output_data(outputfile, output):
                 f.write(sudoku)
                 f.write("\n")
 
-def print_statistics(forward_checking = False, minimal_remaining_values = False):
+def print_statistics(forward_checking = False, minimal_remaining_values = False, degree_heuristic = False):
     """ method that prints statistics to a file.
 
     """
@@ -181,6 +181,8 @@ def print_statistics(forward_checking = False, minimal_remaining_values = False)
         filename += "fc-"
     if minimal_remaining_values:
         filename += "mrv-"
+    if degree_heuristic:
+        filename += "dh-"
     filename += str(dt) + ".csv"
 
     with open(filename, 'wb') as csvfile:
@@ -267,7 +269,7 @@ def print_statistics(forward_checking = False, minimal_remaining_values = False)
             spamwriter.writerow(['--------------------------'])
     os.chdir("../")
 
-def main(arg, forward_checking = False, minimal_remaining_values=False):
+def main(arg, forward_checking = False, minimal_remaining_values=False, degree_heuristic = False):
     """ main function of our CSP sudoku solver. reads in an inputfile with sudokus and outputs the result to a .txt file specified, or to the command line if the outputfile is not specified explicitly as an argument.
 
         @param forward_checking: search heuristic, default is False
@@ -308,7 +310,7 @@ def main(arg, forward_checking = False, minimal_remaining_values=False):
 
         # Here, we are initializing the sudoku.
         sudoku = sudoku_obj.sudoku
-        problem = Problem(forward_checking=forward_checking, minimal_remaining_values=minimal_remaining_values)
+        problem = Problem(forward_checking=forward_checking, minimal_remaining_values=minimal_remaining_values, degree_heuristic = degree_heuristic)
         problem = variable_domains(problem, sudoku)
         problem = sudoku_constraints(problem)
         problem.mapVarToConstraints()
@@ -336,7 +338,7 @@ def main(arg, forward_checking = False, minimal_remaining_values=False):
         # log all the sudokus to a txt-file
         output_data(outputfile, output)
     # print statistics to a csv file.
-    print_statistics(forward_checking, minimal_remaining_values)
+    print_statistics(forward_checking=forward_checking, minimal_remaining_values=minimal_remaining_values, degree_heuristic = degree_heuristic)
 
 if __name__ == '__main__':
     # how many sudokus do we want to check?
@@ -347,4 +349,4 @@ if __name__ == '__main__':
         print "if no outputfile is given, the solutions will be outputted on the screen"
         print "Example: python sudoku.py \"input.txt\" \"output.txt\" "
     else:
-        main(sys.argv,forward_checking=True, minimal_remaining_values=False)
+        main(sys.argv,forward_checking=True, minimal_remaining_values=False, degree_heuristic = True)

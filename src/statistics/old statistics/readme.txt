@@ -1,0 +1,2 @@
+These statistics were used for the presentation. We found that we made 1 small mistake (See report) that resulted in a tenfold increasement runtime of the sudokus.
+We still wanted to include them so they could be used for comparison and checks.
