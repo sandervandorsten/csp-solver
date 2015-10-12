@@ -241,12 +241,25 @@ class BacktrackingSolver(object):
         return count_cvars[0][1]
 
     def sort_both(self, unassigned, variables, var_constr_dict):
-        mrv = []
-        domain_size = 2
-        while len(mrv) == 0:
-            mrv = [v for v in unassigned if len(variables[v]) == domain_size]
-            domain_size += 1
-        return self.sort_dh(mrv, var_constr_dict)
+        count_cvars = []
+        for var in unassigned:
+            c_list = []
+            myconstraints = var_constr_dict[var]
+            for constraint in myconstraints:
+                for other_var in constraint.getOthers(var):
+                    if (other_var in unassigned) and (other_var not in c_list):
+                        c_list.append(other_var)
+            count_cvars.append((len(c_list), var))
+        count_cvars.sort()  
+        var_set = [v for (l,v) in count_cvars if l == count_cvars[0][0]]
+        return self.sort_mrv(var_set, variables)
+
+#        mrv = []
+#        domain_size = 2
+#        while len(mrv) == 0:
+#            mrv = [v for v in unassigned if len(variables[v]) == domain_size]
+#            domain_size += 1
+#        return self.sort_dh(mrv, var_constr_dict)
 
  
 class AllDifferentConstraint(object):
